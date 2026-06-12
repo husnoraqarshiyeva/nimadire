@@ -44,15 +44,12 @@ const API = {
         formData.append('username', username);
         formData.append('password', password);
 
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        // Use API.request so non-JSON responses and errors are handled uniformly
+        return await API.request('/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formData
+            body: formData.toString()
         });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Login xatosi');
-        return data;
     },
 
     // CRM
