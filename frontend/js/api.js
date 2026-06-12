@@ -1,5 +1,7 @@
-// Use relative API base so the frontend works behind a reverse-proxy or different host
-const API_BASE_URL = '/api';
+// Prefer runtime `window.API_BASE_URL` (set in HTML) otherwise fall back to relative `/api`.
+const API_BASE_URL = (typeof window !== 'undefined' && window.API_BASE_URL)
+    ? window.API_BASE_URL.replace(/\/$/, '')
+    : '/api';
 
 const API = {
     async request(endpoint, options = {}) {
