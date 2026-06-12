@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS | TrendWear Distribution ERP</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="brand">
+            <div class="brand-logo">TW</div>
+            <div>
+                <h2>TrendWear Distribution Ltd</h2>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">Warehouse Management System</p>
+            </div>
+        </div>
+        <nav>
+            <a href="dashboard.html" class="nav-link"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+            <a href="crm.html" class="nav-link"><i data-lucide="users"></i> CRM (Mijozlar)</a>
+            <a href="erp.html" class="nav-link"><i data-lucide="shopping-cart"></i> ERP (Buyurtmalar)</a>
+            <a href="wms.html" class="nav-link active"><i data-lucide="package"></i> WMS (Ombor)</a>
+        </nav>
+        <div style="position: absolute; bottom: 1.5rem; width: calc(100% - 3rem);">
+            <button onclick="logout()" class="btn btn-danger" style="background: transparent; border: 1px solid var(--danger); color: var(--danger);">
+                <i data-lucide="log-out"></i> Chiqish
+            </button>
+        </div>
+    </div>
+    <div class="main-content">
+        <header class="flex justify-between items-center mb-4">
+            <div>
+                <h1>Ombor Boshqaruvi (WMS)</h1>
+                <p style="color: var(--text-muted);">Zaxira va mahsulotlar harakati</p>
+            </div>
+            <button class="btn btn-primary"><i data-lucide="refresh-cw"></i> Inventarizatsiya</button>
+        </header>
+
+        <div class="card">
+            <table id="inventory-table">
+                <thead>
+                    <tr>
+                        <th>Mahsulot</th>
+                        <th>SKU</th>
+                        <th>Kategoriya</th>
+                        <th>Miqdor</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" style="text-align: center;">Yuklanmoqda...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        async function loadInventory() {
+            try {
+                const products = await API.getProducts();
+                const inventory = await API.getInventory();
+                const tbody = document.querySelector('#inventory-table tbody');
+                
+                if (products.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Mahsulotlar topilmadi</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = products.map(p => {
+                    const inv = inventory.find(i => i.product_id === p.id) || { stock_quantity: 0 };
+                    const isLow = inv.stock_quantity < 20;
+                    return `
+                        <tr>
+                            <td><strong>${p.name}</strong></td>
+                            <td><code>${p.sku}</code></td>
+                            <td>${p.category}</td>
+                            <td>${inv.stock_quantity} ta</td>
+                            <td><span class="badge ${isLow ? 'badge-warning' : 'badge-success'}">${isLow ? 'Kam qolgan' : 'Yetarli'}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            } catch (err) {
+                console.error(err);
+                showNotification('Inventarni yuklashda xatolik', 'error');
+            }
+        }
+        loadInventory();
+    </script>
+</body>
+</html>

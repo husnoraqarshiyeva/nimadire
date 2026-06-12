@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | TrendWear Distribution ERP</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="brand">
+                <div class="brand-logo">TW</div>
+                <div>
+                    <h1>TrendWear Distribution ERP</h1>
+                    <p>Secure access to cloud-based ERP, CRM and WMS management.</p>
+                </div>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="admin@trendwear.uz" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Parol</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Kirish</button>
+            </form>
+            
+            <div id="login-error" style="color: var(--danger); margin-top: 1rem; text-align: center; font-size: 0.875rem; display: none;"></div>
+        </div>
+    </div>
+
+    <div id="notification-container"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Specific login page logic
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            loginError.style.display = 'none';
+
+            try {
+                const data = await API.login(email, password);
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('user', JSON.stringify(data.user || { email }));
+                
+                showNotification('Muvaffaqiyatli kirdingiz!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+            } catch (err) {
+                loginError.textContent = err.message || 'Login xatosi';
+                loginError.style.display = 'block';
+                showNotification('Kirishda xatolik yuz berdi', 'error');
+            }
+        });
+
+        // Check if already logged in
+        if (localStorage.getItem('access_token')) {
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html>

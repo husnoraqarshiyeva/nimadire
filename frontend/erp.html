@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP | TrendWear Distribution ERP</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="brand">
+            <div class="brand-logo">TW</div>
+            <div>
+                <h2>TrendWear Distribution Ltd</h2>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">Order Management and ERP</p>
+            </div>
+        </div>
+        <nav>
+            <a href="dashboard.html" class="nav-link"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+            <a href="crm.html" class="nav-link"><i data-lucide="users"></i> CRM (Mijozlar)</a>
+            <a href="erp.html" class="nav-link active"><i data-lucide="shopping-cart"></i> ERP (Buyurtmalar)</a>
+            <a href="wms.html" class="nav-link"><i data-lucide="package"></i> WMS (Ombor)</a>
+        </nav>
+        <div style="position: absolute; bottom: 1.5rem; width: calc(100% - 3rem);">
+            <button onclick="logout()" class="btn btn-danger" style="background: transparent; border: 1px solid var(--danger); color: var(--danger);">
+                <i data-lucide="log-out"></i> Chiqish
+            </button>
+        </div>
+    </div>
+    <div class="main-content">
+        <header class="flex justify-between items-center mb-4">
+            <div>
+                <h1>Buyurtmalar (ERP)</h1>
+                <p style="color: var(--text-muted);">Sotuv va buyurtmalarni boshqarish</p>
+            </div>
+            <button class="btn btn-primary"><i data-lucide="plus"></i> Yangi buyurtma</button>
+        </header>
+        
+        <div class="card">
+            <table id="orders-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Mijoz</th>
+                        <th>Sana</th>
+                        <th>Summa</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" style="text-align: center;">Yuklanmoqda...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        async function loadOrders() {
+            try {
+                const orders = await API.getOrders();
+                const tbody = document.querySelector('#orders-table tbody');
+                
+                if (orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Buyurtmalar topilmadi</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = orders.map(o => `
+                    <tr>
+                        <td>#ORD-${o.id}</td>
+                        <td>${o.customer ? o.customer.company_name : 'Noma\'lum'}</td>
+                        <td>${new Date(o.order_date).toLocaleDateString()}</td>
+                        <td>$${parseFloat(o.total_amount).toLocaleString()}</td>
+                        <td><span class="badge ${o.status === 'delivered' ? 'badge-success' : 'badge-warning'}">${o.status}</span></td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
+            } catch (err) {
+                console.error(err);
+                showNotification('Buyurtmalarni yuklashda xatolik', 'error');
+            }
+        }
+        loadOrders();
+    </script>
+</body>
+</html>

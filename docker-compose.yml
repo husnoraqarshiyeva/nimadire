@@ -1,0 +1,64 @@
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trendwear_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@trendwear.uz
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5051:80"
+    depends_on:
+      - postgres
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/trendwear_db
+      SECRET_KEY: your-secret-key-change-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      SUPPORT_EMAIL: support@trendwear.uz
+      ADMIN_EMAIL: admin@trendwear.uz
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8000"        # ← nginx uchun ichki port
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    expose:
+      - "3000"        # ← nginx uchun ichki port (React/Next.js)
+
+  proxy:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "8000:80"     # ← tashqi kirish
+    depends_on:
+      - backend
+      - frontend      # ← frontend ham qo'shildi
+
+volumes:
+  postgres_data:

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | TrendWear Distribution ERP</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="brand">
+            <div class="brand-logo">TW</div>
+            <div>
+                <h2>TrendWear Distribution Ltd</h2>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">Cloud ERP / CRM / WMS</p>
+            </div>
+        </div>
+        <nav>
+            <a href="dashboard.html" class="nav-link active"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+            <a href="crm.html" class="nav-link"><i data-lucide="users"></i> CRM (Mijozlar)</a>
+            <a href="erp.html" class="nav-link"><i data-lucide="shopping-cart"></i> ERP (Buyurtmalar)</a>
+            <a href="wms.html" class="nav-link"><i data-lucide="package"></i> WMS (Ombor)</a>
+        </nav>
+        
+        <div style="position: absolute; bottom: 1.5rem; width: calc(100% - 3rem);">
+            <button onclick="logout()" class="btn btn-danger" style="background: transparent; border: 1px solid var(--danger); color: var(--danger);">
+                <i data-lucide="log-out"></i> Chiqish
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <header class="flex justify-between items-center mb-4">
+            <div>
+                <h1>Boshqaruv paneli</h1>
+                <p style="color: var(--text-muted);">Tizimning umumiy holati va statistika</p>
+            </div>
+            <div id="user-info" class="flex items-center gap-4">
+                <span id="user-name">Admin</span>
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700;">A</div>
+            </div>
+        </header>
+
+        <div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+            <div class="card stat-card">
+                <div class="stat-value" id="stats-customers">0</div>
+                <div class="stat-label">Total Customers</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-value" id="stats-orders">0</div>
+                <div class="stat-label">Monthly Orders</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-value" id="stats-inventory">0</div>
+                <div class="stat-label">Inventory Status</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-value" id="stats-revenue">$0</div>
+                <div class="stat-label">Revenue Overview</div>
+            </div>
+        </div>
+
+        <div class="mt-4 grid gap-4" style="grid-template-columns: 2fr 1fr;">
+            <div class="card">
+                <h3>Recent Orders</h3>
+                <table id="recent-orders-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Mijoz</th>
+                            <th>Sana</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h3>Top Selling Products</h3>
+                <ul id="top-products-list" class="top-list" style="margin-top: 1rem;"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification-container"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        async function loadDashboard() {
+            try {
+                        const orders = await API.getOrders();
+                const customers = await API.getCustomers();
+                const products = await API.getProducts();
+                const inventory = await API.getInventory();
+                
+                const monthlyOrders = orders.filter(o => {
+                    const orderDate = new Date(o.order_date);
+                    const now = new Date();
+                    return orderDate >= new Date(now.getFullYear(), now.getMonth(), 1);
+                });
+                const totalStock = inventory.reduce((sum, item) => sum + parseFloat(item.stock_quantity || 0), 0);
+                
+                document.getElementById('stats-customers').textContent = customers.length;
+                document.getElementById('stats-orders').textContent = monthlyOrders.length;
+                document.getElementById('stats-inventory').textContent = totalStock;
+                
+                const revenue = orders
+                    .filter(o => o.status === 'delivered')
+                    .reduce((acc, o) => acc + parseFloat(o.total_amount || 0), 0);
+                document.getElementById('stats-revenue').textContent = '$' + revenue.toLocaleString();
+
+                const ordersTable = document.querySelector('#recent-orders-table tbody');
+                const recentOrders = orders.slice(0, 5);
+                
+                if (recentOrders.length === 0) {
+                    ordersTable.innerHTML = '<tr><td colspan="4" style="text-align: center;">No orders available</td></tr>';
+                } else {
+                    ordersTable.innerHTML = recentOrders.map(o => `
+                        <tr>
+                            <td>#ORD-${o.id}</td>
+                            <td>${o.customer ? o.customer.company_name : 'No Name'}</td>
+                            <td>${new Date(o.order_date).toLocaleDateString()}</td>
+                            <td><span class="badge ${o.status === 'delivered' ? 'badge-success' : 'badge-warning'}">${o.status}</span></td>
+                        </tr>
+                    `).join('');
+                }
+                
+                const topProducts = orders.reduce((acc, order) => {
+                    if (!order.items) return acc;
+                    order.items.forEach(item => {
+                        acc[item.product_id] = (acc[item.product_id] || 0) + parseFloat(item.quantity || 0);
+                    });
+                    return acc;
+                }, {});
+                let topProductsList = Object.entries(topProducts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                    .map(([id, qty]) => {
+                        const product = products.find(p => p.id === parseInt(id));
+                        return {
+                            name: product ? product.name : `Product ${id}`,
+                            quantity: qty
+                        };
+                    });
+
+                if (topProductsList.length === 0) {
+                    topProductsList = products.slice(0, 5).map(p => ({ name: p.name, quantity: 0 }));
+                }
+
+                const topProductsElement = document.getElementById('top-products-list');
+                topProductsElement.innerHTML = topProductsList.map(p => `<li><span>${p.name}</span><span>${p.quantity} sold</span></li>`).join('');
+
+                lucide.createIcons();
+            } catch (err) {
+                console.error(err);
+                showNotification('Dashboard ma\'lumotlarini yuklashda xatolik', 'error');
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>
