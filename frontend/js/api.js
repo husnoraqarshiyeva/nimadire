@@ -82,3 +82,8 @@ function showNotification(message, type = 'success') {
         setTimeout(() => div.remove(), 300);
     }, 3000);
 }
+
+// Expose API on the global window for inline scripts that expect `API`.
+try {
+    if (typeof window !== 'undefined') window.API = API;
+} catch (e) {}
