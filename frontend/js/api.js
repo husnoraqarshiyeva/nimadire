@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:8000/api';
+// Use relative API base so the frontend works behind a reverse-proxy or different host
+const API_BASE_URL = '/api';
 
 const API = {
     async request(endpoint, options = {}) {
@@ -21,12 +22,21 @@ const API = {
             }
         }
 
-        const data = await response.json();
-        if (!response.ok) {
-            console.error('API Error:', data);
-            throw new Error(data.detail || 'Xatolik yuz berdi');
+        // Try to parse JSON, but if the server returned HTML (eg. nginx welcome page)
+        // fall back to returning the text for easier debugging.
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            const data = await response.json();
+            if (!response.ok) {
+                console.error('API Error:', data);
+                throw new Error(data.detail || 'Xatolik yuz berdi');
+            }
+            return data;
+        } else {
+            const text = await response.text();
+            console.error('Non-JSON response from API:', text);
+            throw new Error('Server returned non-JSON response: ' + text.slice(0, 200));
         }
-        return data;
     },
 
     async login(username, password) {
